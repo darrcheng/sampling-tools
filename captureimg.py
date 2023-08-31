@@ -46,6 +46,9 @@ while True:
 
     frame_with_timestamp = add_timestamp(frame)
 
+    # For display, resize the frame
+    display_frame = cv2.resize(frame_with_timestamp, (640, 360))
+
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
 
     # Create a subfolder in 'images' with the current date if not exists
@@ -56,11 +59,11 @@ while True:
     filename = f"{folder_path}/image_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
     cv2.imwrite(filename, frame_with_timestamp)
 
-    cv2.imshow("Webcam", frame_with_timestamp)
+    cv2.imshow("Webcam", display_frame)
 
     end_time = time.time()
     elapsed_time = end_time - start_time
-    sleep_time = 5 - elapsed_time  # Changed time to 5 seconds
+    sleep_time = 10 - elapsed_time  # Changed time to 5 seconds
     if sleep_time > 0:
         time.sleep(sleep_time)
 
