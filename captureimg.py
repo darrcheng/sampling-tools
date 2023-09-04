@@ -21,54 +21,59 @@ def add_timestamp(image):
 
 # Initialize the webcam
 cap = cv2.VideoCapture(0)
-
-# Manually set the resolution to 1920x1080
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-
-
-# Confirm the frame width and height
-print("Frame width:", cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-print("Frame height:", cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 # Create a root directory 'images' if not exists
 if not os.path.exists("images"):
     os.makedirs("images")
 
 while True:
-    start_time = time.time()
+    try:
+        start_time = time.time()
 
-    ret, frame = cap.read()
+        ret, frame = cap.read()
 
-    if not ret:
-        print("Failed to grab frame")
-        break
+        if not ret:
+            print("Failed to grab frame")
+            break
 
-    frame_with_timestamp = add_timestamp(frame)
+        frame_with_timestamp = add_timestamp(frame)
+        display_frame = cv2.resize(frame_with_timestamp, (640, 360))
+        current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        folder_path = os.path.join("images", current_date)
 
-    # For display, resize the frame
-    display_frame = cv2.resize(frame_with_timestamp, (640, 360))
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
 
-    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        filename = f"{folder_path}/image_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
+        cv2.imwrite(filename, frame_with_timestamp)
+        cv2.imshow("Webcam", display_frame)
 
-    # Create a subfolder in 'images' with the current date if not exists
-    folder_path = os.path.join("images", current_date)
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        sleep_time = 5 - elapsed_time
 
-    filename = f"{folder_path}/image_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
-    cv2.imwrite(filename, frame_with_timestamp)
+        if sleep_time > 0:
+            time.sleep(sleep_time)
 
-    cv2.imshow("Webcam", display_frame)
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
 
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    sleep_time = 10 - elapsed_time  # Changed time to 5 seconds
-    if sleep_time > 0:
-        time.sleep(sleep_time)
+    except Exception as e:
+        current_timestamp = datetime.datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+        error_message = f"{current_timestamp}: {str(e)}"
 
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
+        # Print error message to screen
+        print(error_message)
+
+        # Append the error to a daily log file
+        with open(
+            f"{folder_path}/error_log_{current_date}.txt", "a"
+        ) as log_file:
+            log_file.write(error_message + "\n")
 
 cap.release()
 cv2.destroyAllWindows()
