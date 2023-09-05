@@ -8,6 +8,19 @@ import io
 import sys
 
 
+class MultiWriter:
+    def __init__(self, *outputs):
+        self.outputs = outputs
+
+    def write(self, data):
+        for output in self.outputs:
+            output.write(data)
+
+    def flush(self):
+        for output in self.outputs:
+            output.flush()
+
+
 def add_timestamp(image):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     pil_image = Image.fromarray(image)
@@ -37,12 +50,18 @@ class WebcamError(Exception):
 
 # Redirect stderr to a buffer
 sys.stderr = buffer = io.StringIO()
+original_stderr = sys.stderr
 
 while True:
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     folder_path = os.path.join("images", current_date)
+
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
+
+    log_filepath = f"{folder_path}/error_log_{current_date}.txt"
+    log_file = open(log_filepath, "a")
+    sys.stderr = MultiWriter(original_stderr, log_file)
 
     try:
         start_time = time.time()
@@ -78,26 +97,8 @@ while True:
         current_timestamp = datetime.datetime.now().strftime(
             "%Y-%m-%d %H:%M:%S"
         )
-
-        # Capture the error message from stderr
-        error_from_buffer = buffer.getvalue()
-
-        error_message = (
-            f"{current_timestamp}: Webcam error - {error_from_buffer}"
-        )
-
-        # Print error message to screen
-        print(error_message)
-
-        # Append the error to a daily log file
-        with open(
-            f"{folder_path}/error_log_{current_date}.txt", "a"
-        ) as log_file:
-            log_file.write(error_message + "\n")
-
-        # Clear the buffer after reading
-        buffer.truncate(0)
-        buffer.seek(0)
+        error_message = f"{current_timestamp}: Webcam error"
+        print(error_message)  # This will now print to both stderr and the log
 
         # Attempt to re-initialize the webcam
         cap.release()
@@ -120,6 +121,12 @@ while True:
             f"{folder_path}/error_log_{current_date}.txt", "a"
         ) as log_file:
             log_file.write(error_message + "\n")
+
+    finally:
+        # Close the log file and revert stderr after each iteration
+        log_file.close()
+        sys.stderr = original_stderr
+
 
 cap.release()
 cv2.destroyAllWindows()
