@@ -8,19 +8,6 @@ import io
 import sys
 
 
-class MultiWriter:
-    def __init__(self, *outputs):
-        self.outputs = outputs
-
-    def write(self, data):
-        for output in self.outputs:
-            output.write(data)
-
-    def flush(self):
-        for output in self.outputs:
-            output.flush()
-
-
 def add_timestamp(image):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     pil_image = Image.fromarray(image)
@@ -48,20 +35,17 @@ class WebcamError(Exception):
     pass
 
 
-# Redirect stderr to a buffer
-sys.stderr = buffer = io.StringIO()
-original_stderr = sys.stderr
+def write_to_log(folder_path, message):
+    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    with open(f"{folder_path}/error_log_{current_date}.txt", "a") as log_file:
+        log_file.write(message + "\n")
+
 
 while True:
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     folder_path = os.path.join("images", current_date)
-
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
-
-    log_filepath = f"{folder_path}/error_log_{current_date}.txt"
-    log_file = open(log_filepath, "a")
-    sys.stderr = MultiWriter(original_stderr, log_file)
 
     try:
         start_time = time.time()
@@ -93,16 +77,21 @@ while True:
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
-    except WebcamError:
+    except WebcamError as we:
         current_timestamp = datetime.datetime.now().strftime(
             "%Y-%m-%d %H:%M:%S"
         )
         error_message = f"{current_timestamp}: Webcam error"
-        print(error_message)  # This will now print to both stderr and the log
+
+        # Print to screen
+        print(error_message)
+
+        # Write to log
+        write_to_log(folder_path, error_message)
 
         # Attempt to re-initialize the webcam
         cap.release()
-        time.sleep(2)  # Give it a short break before re-initializing
+        time.sleep(2)
         cap = cv2.VideoCapture(0)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
@@ -113,19 +102,11 @@ while True:
         )
         error_message = f"{current_timestamp}: {str(e)}"
 
-        # Print error message to screen
+        # Print to screen
         print(error_message)
 
-        # Append the error to a daily log file
-        with open(
-            f"{folder_path}/error_log_{current_date}.txt", "a"
-        ) as log_file:
-            log_file.write(error_message + "\n")
-
-    finally:
-        # Close the log file and revert stderr after each iteration
-        log_file.close()
-        sys.stderr = original_stderr
+        # Write to log
+        write_to_log(folder_path, error_message)
 
 
 cap.release()
