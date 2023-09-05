@@ -4,6 +4,8 @@ import time
 import datetime
 import numpy as np
 import os
+import io
+import sys
 
 
 def add_timestamp(image):
@@ -32,6 +34,9 @@ if not os.path.exists("images"):
 class WebcamError(Exception):
     pass
 
+
+# Redirect stderr to a buffer
+sys.stderr = buffer = io.StringIO()
 
 while True:
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -73,7 +78,13 @@ while True:
         current_timestamp = datetime.datetime.now().strftime(
             "%Y-%m-%d %H:%M:%S"
         )
-        error_message = f"{current_timestamp}: Webcam error"
+
+        # Capture the error message from stderr
+        error_from_buffer = buffer.getvalue()
+
+        error_message = (
+            f"{current_timestamp}: Webcam error - {error_from_buffer}"
+        )
 
         # Print error message to screen
         print(error_message)
@@ -83,6 +94,10 @@ while True:
             f"{folder_path}/error_log_{current_date}.txt", "a"
         ) as log_file:
             log_file.write(error_message + "\n")
+
+        # Clear the buffer after reading
+        buffer.truncate(0)
+        buffer.seek(0)
 
         # Attempt to re-initialize the webcam
         cap.release()
