@@ -34,6 +34,11 @@ class WebcamError(Exception):
 
 
 while True:
+    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    folder_path = os.path.join("images", current_date)
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
     try:
         start_time = time.time()
 
@@ -44,11 +49,11 @@ while True:
 
         frame_with_timestamp = add_timestamp(frame)
         display_frame = cv2.resize(frame_with_timestamp, (640, 360))
-        current_date = datetime.datetime.now().strftime("%Y-%m-%d")
-        folder_path = os.path.join("images", current_date)
+        # current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        # folder_path = os.path.join("images", current_date)
 
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+        # if not os.path.exists(folder_path):
+        #     os.makedirs(folder_path)
 
         filename = f"{folder_path}/image_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
         cv2.imwrite(filename, frame_with_timestamp)
