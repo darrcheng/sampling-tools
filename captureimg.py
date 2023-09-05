@@ -28,6 +28,11 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 if not os.path.exists("images"):
     os.makedirs("images")
 
+
+class WebcamError(Exception):
+    pass
+
+
 while True:
     try:
         start_time = time.time()
@@ -35,8 +40,7 @@ while True:
         ret, frame = cap.read()
 
         if not ret:
-            print("Failed to grab frame")
-            break
+            raise WebcamError("Failed to grab frame")
 
         frame_with_timestamp = add_timestamp(frame)
         display_frame = cv2.resize(frame_with_timestamp, (640, 360))
@@ -59,6 +63,28 @@ while True:
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
+
+    except WebcamError:
+        current_timestamp = datetime.datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+        error_message = f"{current_timestamp}: Webcam error"
+
+        # Print error message to screen
+        print(error_message)
+
+        # Append the error to a daily log file
+        with open(
+            f"{folder_path}/error_log_{current_date}.txt", "a"
+        ) as log_file:
+            log_file.write(error_message + "\n")
+
+        # Attempt to re-initialize the webcam
+        cap.release()
+        time.sleep(2)  # Give it a short break before re-initializing
+        cap = cv2.VideoCapture(0)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
     except Exception as e:
         current_timestamp = datetime.datetime.now().strftime(
