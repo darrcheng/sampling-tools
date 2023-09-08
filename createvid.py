@@ -2,11 +2,26 @@ import cv2
 import os
 import tkinter as tk
 from tkinter import filedialog
+from datetime import datetime, timedelta
 
 
 def select_folder(title="Select a folder"):
     folder_selected = filedialog.askdirectory(title=title)
     return folder_selected
+
+
+def extract_timestamp(filename):
+    try:
+        # Extract timestamp from format: image_YYYYMMDDHHMMSS
+        timestamp_str = filename.split("_")[1].split(".")[0]
+        return datetime.strptime(timestamp_str, "%Y%m%d%H%M%S")
+    except:
+        return None
+
+
+def log_to_file(log_file, message):
+    with open(log_file, "a") as f:
+        f.write(message + "\n")
 
 
 def create_timelapse(input_folder, output_folder, fps=30):
@@ -15,6 +30,7 @@ def create_timelapse(input_folder, output_folder, fps=30):
 
     # Output video file name
     output_path = os.path.join(output_folder, f"timelapse_{date_str}.avi")
+    log_file_path = os.path.join(output_folder, f"log_{date_str}.txt")
 
     # Get all files from the folder
     images = [
@@ -25,6 +41,23 @@ def create_timelapse(input_folder, output_folder, fps=30):
 
     # Sort the images by name
     images.sort()
+
+    # Log the timestamp of the first and last frame
+    first_timestamp = extract_timestamp(images[0])
+    last_timestamp = extract_timestamp(images[-1])
+    log_to_file(log_file_path, f"First frame timestamp: {first_timestamp}")
+    log_to_file(log_file_path, f"Last frame timestamp: {last_timestamp}")
+
+    # Check for time gaps more than 30 minutes and log
+    for i in range(len(images) - 1):
+        current_timestamp = extract_timestamp(images[i])
+        next_timestamp = extract_timestamp(images[i + 1])
+
+        if next_timestamp - current_timestamp > timedelta(minutes=30):
+            log_to_file(
+                log_file_path,
+                f"Gap detected: {current_timestamp} to {next_timestamp}",
+            )
 
     # Read the first image to get dimensions
     img = cv2.imread(os.path.join(input_folder, images[0]))
