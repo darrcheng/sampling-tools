@@ -46,7 +46,7 @@ class CSVFile:
         else:
             return 'n/a'  #no voltages have been sent to blower yet
 
-    def writeToCSV(self, volts, rpm, flow, avgVolts, avgFlow, gains):
+    def writeToCSV(self, volts, rpm, pressure, flow, avgVolts, avgFlow, gains):
         filename = self.filename 
         # rpm = time_label.cget("text")[12:]
         time = dt.datetime.now().strftime("%H:%M:%S")
@@ -56,13 +56,13 @@ class CSVFile:
             checkSize = os.path.getsize(filename)
            
             if (checkSize == 0):  # writing header
-                csv_writer.writerow(['Voltage Sent', 'RPM', 'Flow Rate', 'Current Time'])
+                csv_writer.writerow(['Current Time',  'RPM', 'Digihelic Output (V)','Pressure (inWC)', 'Flow Rate (LPM)'])
             
             if (volts != None): #not sure this condition is needed anymore
-                csv_writer.writerow([volts, rpm, flow, time]) 
+                csv_writer.writerow([time, rpm, volts, pressure, flow]) 
             else:
                 preVolts = self.getPrevVoltage()
-                csv_writer.writerow([preVolts, rpm, flow, time])
+                csv_writer.writerow([time, rpm, preVolts, pressure, flow])
 
 class PIDObject:
     def __init__(self):
@@ -91,7 +91,7 @@ class PIDObject:
         global PID_TIME
         
         cs_voltage = d.getAIN(1)
-        print("cs: ", cs_voltage)
+        # print("cs: ", cs_voltage)
         self.digi_voltage.append(cs_voltage)
 
         maxLength = (PID_TIME / DIGI_TIME) 
@@ -109,8 +109,10 @@ class PIDObject:
 
     def calcFlowRate(self, volts, updateSelf=True):
         #convert volts to pressure
-        mA = 8.475 * volts  # according to labjack website
-        p_wc = (mA/64) - (1/16) # in wc
+        mA = volts/.118  # according to labjack website
+        # p_wc = (mA/64) - (1/16) # in wc
+        p_wc = (mA-4)/16*.250 # Full range
+        p_wc = p_wc *(.95) # Readings are about 5% higher than the screen display
         p_atm = 101325 # Pa
         p_Pa = (p_wc * 248.84) + p_atm # convert to pascals and absolute
         
@@ -128,7 +130,7 @@ class PIDObject:
         if (updateSelf):    #change flow rate
             self.flow_rate = flow_rate_lpm
         else:
-            return flow_rate_lpm
+            return p_wc,flow_rate_lpm
 
     def update_graph_data(self, d): #not using, for testing only
         global data #change, due to callback
@@ -137,7 +139,7 @@ class PIDObject:
         self.data['time'].append(time)
         self.data['Flow Rate (avg)'].append(self.flow_rate)
         v = d.getAIN(1) #remove eventually
-        currFlow = self.calcFlowRate(v, False)
+        (currPress,currFlow) = self.calcFlowRate(v, False)
         self.data['Flow Rate (curr)'].append(currFlow)
         self.data['Setpoint'].append(self.setpoint)
         data = self.data
@@ -163,7 +165,8 @@ def update_time_difference(csv, pid_obj, d, timer, counter):
     volts = pid_obj.volts_sent 
     #flow_rate = pid_obj.flow_rate #change
     currVolts = d.getAIN(1)
-    flow_rate = pid_obj.calcFlowRate(currVolts, False)
+    (pressure,flow_rate) = pid_obj.calcFlowRate(currVolts, False)
+    print(f"Pressure: {pressure:.4f} inWC")
     avgVolts = pid_obj.average_volts
     if (avgVolts != 0):    
         avgFlow_Rate = pid_obj.calcFlowRate(avgVolts, False)
@@ -176,7 +179,7 @@ def update_time_difference(csv, pid_obj, d, timer, counter):
         count_diff = current_count - csv.previous_count
         current_rpm = (count_diff / 6) / (time_diff / 60)
         # time_label.config(text="Blower RPM: {:.2f}".format(current_rpm))
-        csv.writeToCSV(volts, current_rpm, flow_rate, avgVolts, avgFlow_Rate, gains) 
+        csv.writeToCSV(volts, current_rpm, pressure,flow_rate, avgVolts, avgFlow_Rate, gains) 
 
     csv.set_count_and_measure(current_measurement, current_count)
 
