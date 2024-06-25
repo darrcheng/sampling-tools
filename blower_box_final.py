@@ -49,7 +49,7 @@ class CSVFile:
     def writeToCSV(self, volts, rpm, pressure, flow, avgVolts, avgFlow, gains):
         filename = self.filename 
         # rpm = time_label.cget("text")[12:]
-        time = dt.datetime.now().strftime("%H:%M:%S")
+        time = dt.datetime.now()
 
         with open(filename, 'a', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
@@ -229,18 +229,23 @@ def main():
     csv.setFilename()
     pid_obj = PIDObject()
 
-    schedule.every(DIGI_TIME).seconds.do(pid_obj.updateDigiVoltage, d) 
-    if (use_pid):
-        schedule.every(PID_TIME).seconds.do(runPID, pid_obj, tdac, d)
-    else:
-        schedule.every(PID_TIME).seconds.do(runBlower, tdac, pid_obj)
+    try:
+        schedule.every(DIGI_TIME).seconds.do(pid_obj.updateDigiVoltage, d) 
+        if (use_pid):
+            schedule.every(PID_TIME).seconds.do(runPID, pid_obj, tdac, d)
+        else:
+            schedule.every(PID_TIME).seconds.do(runBlower, tdac, pid_obj)
 
-    schedule.every(WRITE_TIME).seconds.do(update_time_difference, csv, pid_obj, d, timer, counter)
+        schedule.every(WRITE_TIME).seconds.do(update_time_difference, csv, pid_obj, d, timer, counter)
     #runs serially, not in parallel 
     #(only problem if run time greater than intervals), which it is not
-
+    except Exception as e:
+        print(e)
     while not stop_running: 
-        schedule.run_pending()
+        try:
+            schedule.run_pending()
+        except Exception as e:
+            print(e)
         time.sleep(1)
 
 def stop_schedules():
