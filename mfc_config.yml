@@ -1,0 +1,31 @@
+---
+"num_mfc": 2
+"read_interval": 1
+mfc1:
+  "name": "SADR Extractor"
+  "flow_set": "TDAC0"
+  "flow_read": "AIN0"
+  "scale": 2000 # 10000/5
+  "offset": 0
+  "setpoint": 4000
+mfc2:
+  "name": "SADR Transport"
+  "flow_set": "TDAC1"
+  "flow_read": "AIN1"
+  "scale": 10000  #50000/5
+  "offset": 0
+  "setpoint": 11000
+mfc3:
+  "name": "BlankR Extractor"
+  "flow_set": "TDAC2"
+  "flow_read": "AIN2"
+  "scale": 2000 # 10000/5
+  "offset": 500
+  "setpoint": 4000
+mfc4:
+  "name": "BlankR Transport"
+  "flow_set": "TDAC3"
+  "flow_read": "AIN3"
+  "scale": 10000  #50000/5
+  "offset": 0
+  "setpoint": 11000
