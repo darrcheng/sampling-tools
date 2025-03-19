@@ -39,7 +39,7 @@ with open(csv_filepath, mode="w", newline="") as data_file:
     data_writer.writerow(header)
 
 # Set the MFCs
-handle = ljm.openS("T7", "ANY", "ANY")
+handle = ljm.openS("T4", "ANY", "ANY")
 for i in range(num_mfc):
     mfc = config[f"mfc{i+1}"]
     setpoint = mfc["setpoint"]
@@ -81,28 +81,31 @@ import random
 
 def update_mfc_data():
     while True:
-        data = [datetime.now()]
-        for i in range(num_mfc):
-            mfc_name = config[f"mfc{i+1}"]["name"]
-            mfc = config[f"mfc{i+1}"]
-            scale = mfc["scale"]
-            offset = mfc["offset"]
-            flowrate = ljm.eReadName(handle, mfc["flow_read"]) * scale + offset
-            # flowrate = random.randint(0, 100)
+        try:
+            data = [datetime.now()]
+            for i in range(num_mfc):
+                mfc_name = config[f"mfc{i+1}"]["name"]
+                mfc = config[f"mfc{i+1}"]
+                scale = mfc["scale"]
+                offset = mfc["offset"]
+                flowrate = ljm.eReadName(handle, mfc["flow_read"]) * scale + offset
+                # flowrate = random.randint(0, 100)
 
-            # Update flow rate in the GUI
-            mfc_flows[mfc_name].config(text=f"Flowrate: {flowrate}")
+                # Update flow rate in the GUI
+                mfc_flows[mfc_name].config(text=f"Flowrate: {flowrate}")
 
-            data.append(mfc["setpoint"])
-            data.append(flowrate)
+                data.append(mfc["setpoint"])
+                data.append(flowrate)
 
-        # Write data to CSV
-        with open(csv_filepath, mode="a", newline="") as data_file:
-            data_writer = csv.writer(data_file, delimiter=",")
-            data_writer.writerow(data)
+            # Write data to CSV
+            with open(csv_filepath, mode="a", newline="") as data_file:
+                data_writer = csv.writer(data_file, delimiter=",")
+                data_writer.writerow(data)
 
-        # Wait for the next read
-        time.sleep(config["read_interval"])
+            # Wait for the next read
+            time.sleep(config["read_interval"])
+        except:
+            pass
 
 
 # Run data update in a separate thread to keep GUI responsive
