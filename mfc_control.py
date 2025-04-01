@@ -39,7 +39,7 @@ with open(csv_filepath, mode="w", newline="") as data_file:
     data_writer.writerow(header)
 
 # Set the MFCs
-handle = ljm.openS("T4", "ANY", "ANY")
+handle = ljm.openS("ANY", "ANY", "ANY")
 for i in range(num_mfc):
     mfc = config[f"mfc{i+1}"]
     setpoint = mfc["setpoint"]
@@ -114,73 +114,3 @@ data_thread.start()
 
 # Run the Tkinter event loop
 root.mainloop()
-
-
-# import csv
-# from datetime import datetime
-# import os
-# import time
-
-# from labjack import ljm
-# import yaml
-
-
-# # Load Labjack
-# # handle = ljm.openS("T7", "ANY", "ANY")
-
-# # Load config file
-# program_path = os.path.dirname(os.path.realpath(__file__))
-# with open("mfc_config.yml", "r", encoding="utf-8") as f:
-#     config = yaml.safe_load(f)
-
-# num_mfc = config["num_mfc"]
-
-# # Create file
-# start_time = datetime.now()
-# current_date = start_time.strftime("%Y-%m-%d")
-# subfolder_path = os.path.join(os.getcwd(), current_date)
-# os.makedirs(subfolder_path, exist_ok=True)
-
-# # Create CSV file and writer
-# file_datetime = start_time.strftime("%Y%m%d_%H%M%S")
-# csv_filename = "MFC_" + file_datetime + ".csv"
-# csv_filepath = os.path.join(subfolder_path, csv_filename)
-
-
-# # Create file header
-# header = ["datetime"]
-# for i in range(num_mfc):
-#     header.append(config[f"mfc{i+1}"]["name"] + "_setpoint")
-#     header.append(config[f"mfc{i+1}"]["name"] + "_flowrate")
-
-# # Write CSV header
-# with open(csv_filepath, mode="w", newline="") as data_file:
-#     data_writer = csv.writer(data_file, delimiter=",")
-#     data_writer.writerow(header)
-
-# # Set the MFCs
-# for i in range(num_mfc):
-#     mfc = config[f"mfc{i+1}"]
-#     setpoint = mfc["setpoint"]
-#     # ljm.eWriteName(handle, mfc["flow_set"], setpoint)
-
-# # Every second read the MFCs and write to file
-# start_time = time.monotonic()
-# while True:
-#     data = [datetime.now()]
-#     for i in range(num_mfc):
-#         mfc = config[f"mfc{i+1}"]
-#         flowrate = 0  # ljm.eReadName(handle, mfc["flow_read"])
-#         data.append(mfc["setpoint"])
-#         data.append(flowrate)
-
-#     with open(csv_filepath, mode="a", newline="") as data_file:
-#         data_writer = csv.writer(data_file, delimiter=",")
-#         data_writer.writerow(data)
-
-#     # Wait until next read
-#     curr_time = time.monotonic()
-#     sleep_time = config["read_interval"] - (curr_time - start_time)
-#     if sleep_time > 0:
-#         time.sleep(sleep_time)
-#     start_time = start_time + config["read_interval"]
